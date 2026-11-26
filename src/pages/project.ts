@@ -61,6 +61,7 @@ export function project(p: Project): Page {
     <article class="case">
       <div class="case__cover" style="--ar:${p.ar};--img:url('${p.cover}')">
         <div class="case__stage">
+          <span class="case__shade" aria-hidden="true"></span>
           ${p.ui
             ? `<div class="case__frame" data-flip-target>
                 <video src="${p.ui}" poster="${p.hero}" muted loop playsinline preload="auto" data-ambient aria-label="The hero section of the ${name} page, recorded"></video>
@@ -69,6 +70,7 @@ export function project(p: Project): Page {
             : `<div class="case__frame" data-flip-target><img src="${p.cover}" alt="${name}: opening screen" draggable="false" /></div>`}
         </div>
       </div>
+      <div class="case__sheet">
       <header class="case__head">
         <h1 class="case__title" aria-label="${title.join(' ')}">${title.map((t) => `<span class="mask"><span>${t}</span></span>`).join('')}</h1>
         <p class="case__kind">${p.kind}</p>
@@ -152,6 +154,7 @@ export function project(p: Project): Page {
         <span class="next__img" style="--ar:${next.ar}"><span data-flip-src data-jelly data-jelly-gain="0.3"><img src="${next.cover}" alt="" loading="lazy" draggable="false" /></span></span>
         <span class="next__ttl"><strong>${next.title.filter(Boolean).join('<br>')}</strong><em>${next.kind}</em></span>
       </a>
+      </div>
     </article>`,
     mount({ root, intro }) {
       // the screen recording plays silently while it is on screen
@@ -226,19 +229,35 @@ export function project(p: Project): Page {
       const lines = [...root.querySelectorAll<HTMLElement>('.case__title .mask > span')];
       const letters = lines.map((l) => jellyLetters(l, { gain: 0.45 }));
 
-      // the banner does not wobble. As it leaves, its bottom edge bends into the same lens the
-      // page transition uses, the recording sinks back into it and the glow behind it drifts off
+      // the banner does not wobble. It stays put while the page rises over it like a sheet whose
+      // leading edge is the same lens the page transition uses; the faster you scroll, the more it
+      // bulges. Under it the recording is pushed back and darkens while the footage zooms in,
+      // a small dolly zoom, and the glow behind it drifts off
       const cover = root.querySelector<HTMLElement>('.case__cover')!;
+      const sheet = root.querySelector<HTMLElement>('.case__sheet')!;
       const stage = cover.querySelector<HTMLElement>('.case__stage')!;
+      const frame = cover.querySelector<HTMLElement>('.case__frame')!;
+      const media = frame.querySelector<HTMLElement>('video, img')!;
+      const shade = cover.querySelector<HTMLElement>('.case__shade')!;
       const tag = cover.querySelector<HTMLElement>('.film__tag');
+      const lens = gsap.quickTo(sheet, '--lens', { duration: 0.7, ease: 'power3.out' });
       const out = gsap.timeline({
         defaults: { ease: 'none' },
-        scrollTrigger: { trigger: cover, start: 'top top', end: 'bottom top', scrub: 0.6, invalidateOnRefresh: true },
+        scrollTrigger: {
+          trigger: cover, start: 'top top', end: () => `+=${cover.offsetHeight}`, scrub: 0.6, invalidateOnRefresh: true,
+          onUpdate: (self) => lens(Math.sin(Math.PI * self.progress) * 7 + Math.min(6, Math.abs(self.getVelocity()) / 400)),
+          // once the sheet covers it, the banner stops drawing and its recording stops playing
+          onLeave: () => { lens(0); cover.style.visibility = 'hidden'; ambient?.pause(); },
+          onEnterBack: () => { cover.style.visibility = ''; ambient?.play().catch(() => {}); },
+        },
       });
       out
-        .fromTo(cover, { '--curve': 0, '--drift': 0 }, { '--curve': 42, '--drift': 1 }, 0)
-        .fromTo(stage, { yPercent: 0, scale: 1, rotateX: 0 }, { yPercent: 30, scale: 0.8, rotateX: 9, ease: 'power1.in' }, 0);
-      if (tag) out.to(tag, { autoAlpha: 0, y: 12, duration: 0.3 }, 0);
+        .fromTo(cover, { '--drift': 0 }, { '--drift': 1 }, 0)
+        .fromTo(stage, { scale: 1, yPercent: 0 }, { scale: 0.84, yPercent: 4, ease: 'power1.in' }, 0)
+        .fromTo([frame, shade], { borderRadius: 4 }, { borderRadius: 28 }, 0)
+        .fromTo(media, { scale: 1 }, { scale: 1.14, ease: 'power1.in' }, 0)
+        .fromTo(shade, { opacity: 0 }, { opacity: 0.65, ease: 'power2.in' }, 0);
+      if (tag) out.to(tag, { autoAlpha: 0, y: 12, duration: 0.25 }, 0);
 
       // poster title -> running head; the category line keeps its size while the title shrinks
       const k = () => Math.max(0.1, Math.min(0.26, (190 / head.offsetWidth) * (innerWidth < 760 ? 0.7 : 1)));
