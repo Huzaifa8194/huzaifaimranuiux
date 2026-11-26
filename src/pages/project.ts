@@ -57,6 +57,7 @@ export function project(p: Project): Page {
     title: `${name}, ${p.kind.toLowerCase()} | Huzaifa Imran`,
     lines: title,
     bar: p.kind,
+    skin: p.slug,
     html: `
     <article class="case">
       <div class="case__cover" style="--ar:${p.ar};--img:url('${p.cover}')">
@@ -254,7 +255,7 @@ export function project(p: Project): Page {
       out
         .fromTo(cover, { '--drift': 0 }, { '--drift': 1 }, 0)
         .fromTo(stage, { scale: 1, yPercent: 0 }, { scale: 0.84, yPercent: 4, ease: 'power1.in' }, 0)
-        .fromTo([frame, shade], { borderRadius: 4 }, { borderRadius: 28 }, 0)
+        .fromTo([frame, shade], { borderRadius: 0 }, { borderRadius: 28 }, 0)
         .fromTo(media, { scale: 1 }, { scale: 1.14, ease: 'power1.in' }, 0)
         .fromTo(shade, { opacity: 0 }, { opacity: 0.65, ease: 'power2.in' }, 0);
       if (tag) out.to(tag, { autoAlpha: 0, y: 12, duration: 0.25 }, 0);

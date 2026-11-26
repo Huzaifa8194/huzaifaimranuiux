@@ -26,10 +26,13 @@ export type Page = {
   lines: string[]; // what the curtain announces
   html: string;
   theme?: 'paper' | 'ink' | 'accent';
+  skin?: string; // a product's own colours and backdrop, see skins.ts
   locked?: boolean; // the page drives its own wheel, the document does not scroll
   bar?: string; // small label in the middle of the footer bar
   mount?: (ctx: PageCtx) => void | (() => void);
 };
+
+import { applySkin } from './skins';
 
 const app = document.getElementById('app')!;
 const html = document.documentElement;
@@ -52,6 +55,7 @@ function resolve(path: string): Page {
 function mountPage(page: Page) {
   document.title = page.title;
   html.dataset.theme = page.theme ?? 'paper';
+  applySkin(page.skin);
   html.classList.toggle('is-locked', !!page.locked);
   app.innerHTML = page.html;
   const mid = document.querySelector<HTMLElement>('[data-bar-mid]')!;
