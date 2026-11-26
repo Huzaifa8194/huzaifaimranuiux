@@ -29,7 +29,8 @@ export async function cover({ lines, from, tone = 'accent' }: CoverOpts) {
   }
 
   // lift the clicked image out of the page so it survives the swap
-  const img = from?.tagName === 'IMG' ? (from as HTMLImageElement) : from?.querySelector('img');
+  // a frame that stacks several pictures (the works stage) marks the one on show
+  const img = from?.tagName === 'IMG' ? (from as HTMLImageElement) : from?.querySelector<HTMLImageElement>('img[data-flip-img]') ?? from?.querySelector('img');
   if (from && img) {
     // measure the image at rest, then hand its current wobble to the clone so it eases out in
     // flight: measuring the skewed box made the picture jump the moment it was clicked

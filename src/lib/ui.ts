@@ -48,8 +48,11 @@ export const resetCursor = () => document.getElementById('cursor')?.classList.re
 
 /* ---------- menu: the button unfolds into the panel ---------- */
 let menuOpen = false;
+let closeTimer = 0;
 export function closeMenu() { if (menuOpen) setMenu(false); }
 function setMenu(open: boolean) {
+  clearTimeout(closeTimer); closeTimer = 0;
+  if (open === menuOpen) return;
   menuOpen = open;
   const nav = document.querySelector<HTMLElement>('.menu')!;
   const btn = nav.querySelector<HTMLButtonElement>('.menu__toggle')!;
@@ -67,7 +70,18 @@ export function initMenu() {
   btn.addEventListener('click', () => setMenu(!menuOpen));
   if (fine()) {
     btn.addEventListener('pointerenter', () => setMenu(true));
-    nav.addEventListener('pointerleave', () => setMenu(false));
+    // close only once the pointer has really gone: measured against the panel's full box with a
+    // margin and a short grace period. pointerleave fired while the panel was still unfolding,
+    // because its clipped part cannot be hovered yet, so the menu shut on the way to a link
+    const inside = (x: number, y: number) => {
+      const r = panel.getBoundingClientRect(), m = 28;
+      return x > r.left - m && x < r.right + m && y > r.top - m && y < r.bottom + m;
+    };
+    addEventListener('pointermove', (e) => {
+      if (!menuOpen) return;
+      if (inside(e.clientX, e.clientY)) { clearTimeout(closeTimer); closeTimer = 0; }
+      else if (!closeTimer) closeTimer = window.setTimeout(() => { closeTimer = 0; setMenu(false); }, 320);
+    }, { passive: true });
   }
   addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
   document.addEventListener('pointerdown', (e) => { if (menuOpen && !nav.contains(e.target as Node)) setMenu(false); });

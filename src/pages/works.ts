@@ -64,6 +64,8 @@ export function works(): Page {
         scramble(kind, pr.kind.toUpperCase(), 0.5);
         const img = imgs[i];
         img.style.zIndex = String(++z);
+        // the page transition carries this picture, not the first one in the stack
+        imgs.forEach((m) => m.toggleAttribute('data-flip-img', m === img));
         if (body) poke(body, 4.5 * dir, 0, dir * -260);
         if (motion) {
           gsap.fromTo(img, { clipPath: dir >= 0 ? 'inset(100% 0% 0% 0%)' : 'inset(0% 0% 100% 0%)', scale: 1.25 }, { clipPath: 'inset(0% 0% 0% 0%)', scale: 1, duration: 0.9, ease: 'expo.out', overwrite: true });
