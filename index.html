@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-theme="paper">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Huzaifa Imran, UI/UX designer and frontend engineer</title>
+    <meta name="description" content="Portfolio of Huzaifa Imran, a UI/UX designer and frontend engineer in Islamabad who makes technical products easy to read through interface, story and motion." />
+    <meta property="og:title" content="Huzaifa Imran, UI/UX designer and frontend engineer" />
+    <meta property="og:description" content="Seven product experiences for a cybersecurity company, and an archive of thirty more." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#e9e7e0" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      document.documentElement.classList.add('js');
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('motion');
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to content</a>
+
+    <!-- first load -->
+    <div id="loader" role="status" aria-label="Loading">
+      <div class="loader__mark" aria-hidden="true">
+        <div class="mask"><span class="loader__name">HUZAIFA</span></div>
+        <div class="mask"><span class="loader__sub">Imran</span></div>
+      </div>
+      <span class="loader__count" data-loader-count aria-hidden="true">000</span>
+    </div>
+
+    <!-- page transitions: a lens shaped panel that rises and leaves -->
+    <div id="curtain" aria-hidden="true">
+      <div class="curtain__panel"></div>
+      <div class="curtain__stage">
+        <div class="curtain__thumb"></div>
+        <div class="curtain__title"></div>
+      </div>
+      <span class="curtain__count">000</span>
+    </div>
+
+    <div id="cursor" aria-hidden="true"><span class="cursor__box"><span class="cursor__label"></span></span></div>
+
+    <header class="site-head">
+      <a class="mark" href="/" aria-label="Huzaifa Imran, home" data-magnetic="0.3">
+        <svg viewBox="0 0 44 44" width="44" height="44" aria-hidden="true">
+          <path d="M6 5h9v13h14V5h9v34h-9V26H15v13H6z" fill="currentColor" />
+          <path d="M33 5h5l-9 34h-5z" fill="var(--c-accent)" class="mark__slash" />
+        </svg>
+      </a>
+    </header>
+
+    <nav class="menu" aria-label="Main">
+      <button class="menu__toggle" type="button" aria-expanded="false" aria-controls="menu-panel">
+        <span class="sr-only">Menu</span>
+        <span class="menu__lines" aria-hidden="true"><i></i><i></i></span>
+      </button>
+      <div class="menu__panel" id="menu-panel">
+        <span class="menu__slab" aria-hidden="true"></span>
+        <a href="/works">Works</a>
+        <a href="/archive">Archive</a>
+        <a href="/about">About</a>
+        <a href="mailto:huzaifa8195@gmail.com">Let's talk</a>
+      </div>
+    </nav>
+
+    <main id="app" tabindex="-1"></main>
+
+    <footer class="bar">
+      <div class="bar__left">
+        <span>© 2026</span>
+        <span class="bar__sep">-</span>
+        <span>Islamabad, PK</span>
+        <span class="bar__sep">|</span>
+        <a href="/archive" data-scramble-hover>Archive</a>
+        <span class="bar__sep">|</span>
+        <a href="mailto:huzaifa8195@gmail.com" data-scramble-hover>Email</a>
+      </div>
+      <div class="bar__mid" data-bar-mid></div>
+      <div class="bar__right">
+        <a href="https://www.linkedin.com/in/muhammad-huzaifa-imran-340991293/" target="_blank" rel="noopener" data-scramble-hover>LinkedIn</a>
+        <span class="bar__sep">|</span>
+        <a href="https://github.com/Huzaifa8194" target="_blank" rel="noopener" data-scramble-hover>GitHub</a>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
