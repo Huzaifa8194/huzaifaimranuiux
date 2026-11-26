@@ -13,7 +13,7 @@ const card = (i: number, set: number) => {
   const p = projects[i];
   const hidden = set !== 1 ? ' aria-hidden="true" tabindex="-1"' : '';
   return `
-  <a class="card" href="/works/${p.slug}" data-flip data-cursor="View project" style="--h:${HEIGHTS[i % HEIGHTS.length]};--ar:${p.ar}"${hidden}>
+  <a class="card" href="/works/${p.slug}" draggable="false" data-flip data-cursor="View project" style="--h:${HEIGHTS[i % HEIGHTS.length]};--ar:${p.ar}"${hidden}>
     <span class="card__media" data-flip-src>
       <img src="${p.cover}" alt="${set === 1 ? `${p.title.join('')}, ${p.kind.toLowerCase()}` : ''}" draggable="false" ${i < 4 && set === 1 ? '' : 'loading="lazy"'} />
       ${p.loop ? `<video src="${p.loop}" muted loop playsinline preload="none"></video>` : ''}
@@ -68,7 +68,8 @@ export function home(): Page {
         target += d * (e.pointerType === 'touch' ? 1.6 : 1.2);
       };
       const onUp = () => { dragging = false; };
-      const onClickCapture = (e: MouseEvent) => { if (moved > 8) { e.preventDefault(); e.stopPropagation(); } };
+      const onClickCapture = (e: MouseEvent) => { if (moved > 8) { e.preventDefault(); e.stopPropagation(); } moved = 0; };
+      const onDragStart = (e: DragEvent) => e.preventDefault(); // a tiny mouse move mid click must not start a native link drag
       const onKey = (e: KeyboardEvent) => {
         if (e.key === 'ArrowRight') target -= innerWidth * 0.3;
         if (e.key === 'ArrowLeft') target += innerWidth * 0.3;
@@ -78,6 +79,7 @@ export function home(): Page {
       addEventListener('pointermove', onMove, { passive: true });
       addEventListener('pointerup', onUp);
       strip.addEventListener('click', onClickCapture, true);
+      strip.addEventListener('dragstart', onDragStart);
       addEventListener('keydown', onKey);
       addEventListener('resize', measure);
 
@@ -98,10 +100,15 @@ export function home(): Page {
           scramble(t, undefined, 0.5); scramble(k, undefined, 0.6);
           vid?.play().catch(() => {});
           // the neighbours feel it too
-          [-1, 1].forEach((o) => { const b = hung[(i + o + hung.length) % hung.length]; if (b) poke(b, 1.4, o * 120); });
+          [-1, 1].forEach((o) => { const b = hung[(i + o + hung.length) % hung.length]; if (b) poke(b, 0.6, o * 50); });
         });
         c.addEventListener('pointerleave', () => { hover = false; c.classList.remove('is-hot'); vid?.pause(); });
-        c.addEventListener('focus', () => { c.classList.add('is-hot'); target = -(c.offsetLeft - setW) + innerWidth * 0.3; });
+        // only keyboard focus scrolls the reel: a mouse click also focuses the link, and yanking the
+        // reel then flung every card mid click
+        c.addEventListener('focus', () => {
+          c.classList.add('is-hot');
+          if (c.matches(':focus-visible')) target = -(c.offsetLeft - setW) + innerWidth * 0.3;
+        });
         c.addEventListener('blur', () => c.classList.remove('is-hot'));
       });
 
@@ -119,11 +126,11 @@ export function home(): Page {
         const dv = v - pv; // change in speed this frame: what the cards feel
         setX((((x % setW) + setW) % setW) - setW);
         if (!motion) return;
-        skew += (gsap.utils.clamp(-14, 14, v * 0.012) - skew) * 0.14;
+        skew += (gsap.utils.clamp(-9, 9, v * 0.008) - skew) * 0.12;
         setSkewWord(-skew); setSkewCopy(-skew * 0.5);
         if (Math.abs(dv) > 0.4) {
-          for (const b of hung) { if (b.inview) { b.vx -= (dv * 1.5) / b.mass; b.vq += Math.abs(dv) * 0.0016; b.awake = true; } }
-          letters?.bodies.forEach((b) => { b.vx -= (dv * 0.55) / b.mass; b.vy -= (Math.abs(dv) * 0.25) / b.mass; b.awake = true; });
+          for (const b of hung) { if (b.inview) { b.vx -= (dv * 0.9) / b.mass; b.vq += Math.abs(dv) * 0.0009; b.awake = true; } }
+          letters?.bodies.forEach((b) => { b.vx -= (dv * 0.32) / b.mass; b.vy -= (Math.abs(dv) * 0.15) / b.mass; b.awake = true; });
         }
       };
       gsap.ticker.add(tick);

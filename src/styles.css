@@ -236,9 +236,9 @@ html[data-theme='accent'] .bar, html[data-theme='accent'] .site-head .mark { mix
 /* ------------------------------------------------------------------
    Case study
 ------------------------------------------------------------------ */
-.case__cover { position: relative; height: 58vh; display: grid; place-items: center; padding: var(--gutter); overflow: hidden; background: var(--c-ink); }
-.case__cover::before { content: ''; position: absolute; inset: -12%; background: var(--img) center / cover; filter: blur(44px) saturate(1.25); opacity: 0.6; }
-.case__stage { position: relative; height: min(100%, calc((100vw - var(--gutter) * 2) / (var(--ar)))); aspect-ratio: var(--ar); cursor: grab; }
+.case__cover { --curve: 0; --drift: 0; position: relative; height: 58vh; display: grid; place-items: center; padding: var(--gutter); overflow: hidden; background: var(--c-ink); perspective: 1600px; border-radius: 0 0 50% 50% / 0 0 calc(var(--curve) * 1%) calc(var(--curve) * 1%); }
+.case__cover::before { content: ''; position: absolute; inset: -12%; background: var(--img) center / cover; filter: blur(44px) saturate(1.25); opacity: calc(0.6 - var(--drift) * 0.35); transform: translate3d(0, calc(var(--drift) * -10%), 0) scale(calc(1 + var(--drift) * 0.25)); }
+.case__stage { position: relative; height: min(100%, calc((100vw - var(--gutter) * 2) / (var(--ar)))); aspect-ratio: var(--ar); transform-origin: 50% 100%; will-change: transform; }
 .case__frame { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: var(--radius); background: var(--c-ink); }
 .case__frame img, .case__frame video { width: 100%; height: 100%; object-fit: cover; }
 .film__tag { position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 0.7em; padding: 0.55em 0.9em; background: var(--c-ink); color: var(--c-paper); border-radius: var(--radius); font-size: var(--t-xs); text-transform: uppercase; font-weight: 500; transition: translate 0.5s var(--spring), background-color 0.3s, color 0.3s; }

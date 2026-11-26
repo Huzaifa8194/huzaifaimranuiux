@@ -31,7 +31,14 @@ export async function cover({ lines, from, tone = 'accent' }: CoverOpts) {
   // lift the clicked image out of the page so it survives the swap
   const img = from?.tagName === 'IMG' ? (from as HTMLImageElement) : from?.querySelector('img');
   if (from && img) {
+    // measure the image at rest, then hand its current wobble to the clone so it eases out in
+    // flight: measuring the skewed box made the picture jump the moment it was clicked
+    const cs = getComputedStyle(from);
+    const wobble = cs.transform, origin = cs.transformOrigin;
+    const was = from.style.transform;
+    from.style.transform = 'none';
     const r = from.getBoundingClientRect();
+    from.style.transform = was;
     flip = document.createElement('div');
     flip.className = 'flip';
     const clone = document.createElement('img');
@@ -39,7 +46,8 @@ export async function cover({ lines, from, tone = 'accent' }: CoverOpts) {
     clone.alt = '';
     flip.appendChild(clone);
     document.body.appendChild(flip);
-    gsap.set(flip, { left: r.left, top: r.top, width: r.width, height: r.height });
+    gsap.set(flip, { left: r.left, top: r.top, width: r.width, height: r.height, transformOrigin: origin });
+    if (wobble && wobble !== 'none') gsap.set(flip, { transform: wobble });
     from.style.visibility = 'hidden';
   }
 
@@ -49,6 +57,7 @@ export async function cover({ lines, from, tone = 'accent' }: CoverOpts) {
   if (flip) {
     const s = slot.getBoundingClientRect();
     tl.to(flip, { left: s.left, top: s.top, width: s.width, height: s.height, duration: 1.15, ease: 'back.inOut(1.5)' }, 0);
+    tl.to(flip, { x: 0, y: 0, rotation: 0, skewX: 0, skewY: 0, scaleX: 1, scaleY: 1, duration: 0.5, ease: 'power3.out' }, 0);
   }
   tl.add(() => { gsap.set(title, { autoAlpha: 1 }); mixTitle(title, lines, 0.75); }, 0.5);
   tl.fromTo(title, { scale: 0.7 }, { scale: 1, duration: 1, ease: 'elastic.out(1, 0.45)' }, 0.5);

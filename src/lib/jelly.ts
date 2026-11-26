@@ -6,6 +6,7 @@
 //   data-jelly="drag"     can also be pulled around and let go
 //   data-jelly="hang"     hangs from its top edge and swings (the home reel)
 //   data-magnetic="0.3"   leans toward the pointer, wobbles back when it leaves
+//   data-jelly-gain="0.4" scales how hard hover, press, scroll and pokes hit this body (and damps it)
 //   jellyLetters(el)      every letter is a body the pointer pushes aside
 import { gsap } from 'gsap';
 import { chars, reduced } from './text';
@@ -15,6 +16,7 @@ export type Body = {
   el: HTMLElement; mode: Mode; mass: number; pull: number;
   x: number; y: number; vx: number; vy: number; tx: number; ty: number;
   q: number; vq: number; // squash and stretch
+  gain: number; // 1 = full wobble, lower = calmer: smaller kicks and more damping
   awake: boolean; inview: boolean; dragging: boolean; scroll: boolean;
   off: (() => void)[];
 };
@@ -60,7 +62,7 @@ function step(_t: number, delta: number) {
       const R = Math.max(90, r.height * 1.1);
       const d = Math.hypot(dx, dy);
       if (d < R && d > 0.01) {
-        const f = (1 - d / R) ** 2 * 5200;
+        const f = (1 - d / R) ** 2 * 3800 * b.gain;
         pushes.push([b, (dx / d) * f, (dy / d) * f]);
       }
     });
@@ -70,10 +72,11 @@ function step(_t: number, delta: number) {
 
   // write phase
   bodies.forEach((b) => {
-    if (b.scroll && b.inview && Math.abs(dv) > 0.05) { b.vy -= (dv * 26) / b.mass; b.vq += dv * 0.05; wake(b); }
+    if (b.scroll && b.inview && Math.abs(dv) > 0.05) { b.vy -= (dv * 16 * b.gain) / b.mass; b.vq += dv * 0.03 * b.gain; wake(b); }
     if (!b.awake) return;
+    const calm = (1 - b.gain) * 9; // calmer bodies ring out faster
     const K = b.dragging ? 520 : b.mode === 'letter' ? 150 : 190;
-    const C = b.dragging ? 34 : b.mode === 'letter' ? 8.5 : 10.5;
+    const C = b.dragging ? 34 : (b.mode === 'letter' ? 10.5 : 12.5) + calm;
     b.vx += (-K * (b.x - b.tx) - C * b.vx) * dt;
     b.vy += (-K * (b.y - b.ty) - C * b.vy) * dt;
     b.vx = gsap.utils.clamp(-2600, 2600, b.vx);
@@ -81,7 +84,7 @@ function step(_t: number, delta: number) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     if (!b.dragging && b.mode !== 'letter') { b.x = gsap.utils.clamp(-90, 90, b.x); b.y = gsap.utils.clamp(-90, 90, b.y); }
-    b.vq += (-320 * b.q - 9.5 * b.vq) * dt;
+    b.vq += (-320 * b.q - (12 + calm) * b.vq) * dt;
     b.q += b.vq * dt;
 
     const still = !b.dragging && b.tx === 0 && b.ty === 0
@@ -93,24 +96,24 @@ function step(_t: number, delta: number) {
       b.el.style.transform = '';
       return;
     }
-    const sx = Math.min(0.22, Math.abs(b.vx) * 0.00028);
-    const sy = Math.min(0.22, Math.abs(b.vy) * 0.00028);
-    const q = gsap.utils.clamp(-0.3, 0.3, b.q);
+    const sx = Math.min(0.14, Math.abs(b.vx) * 0.0002);
+    const sy = Math.min(0.14, Math.abs(b.vy) * 0.0002);
+    const q = gsap.utils.clamp(-0.2, 0.2, b.q);
     if (b.mode === 'hang') {
-      const lean = gsap.utils.clamp(-16, 16, -b.x * 0.16);
+      const lean = gsap.utils.clamp(-10, 10, -b.x * 0.12);
       b.el.style.transform = `skewX(${lean.toFixed(2)}deg) scale(${(1 + q * 0.35).toFixed(4)},${(1 - q + Math.abs(lean) * 0.004).toFixed(4)})`;
     } else {
-      const rot = gsap.utils.clamp(-14, 14, b.vx * 0.012);
+      const rot = gsap.utils.clamp(-8, 8, b.vx * 0.008);
       b.el.style.transform = `translate3d(${b.x.toFixed(2)}px,${b.y.toFixed(2)}px,0) rotate(${rot.toFixed(2)}deg) scale(${(1 + q + sx - sy * 0.6).toFixed(4)},${(1 - q + sy - sx * 0.6).toFixed(4)})`;
     }
   });
 }
 
-export function addBody(el: HTMLElement, mode: Mode = 'pop', opts: Partial<Pick<Body, 'mass' | 'pull' | 'scroll'>> = {}): Body {
+export function addBody(el: HTMLElement, mode: Mode = 'pop', opts: Partial<Pick<Body, 'mass' | 'pull' | 'scroll' | 'gain'>> = {}): Body {
   start();
   const b: Body = {
     el, mode, mass: opts.mass ?? gsap.utils.random(0.8, 1.35), pull: opts.pull ?? 0.3,
-    x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, q: 0, vq: 0,
+    x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, q: 0, vq: 0, gain: gsap.utils.clamp(0, 1, opts.gain ?? 1),
     awake: false, inview: true, dragging: false, scroll: opts.scroll ?? (mode === 'pop' || mode === 'drag'), off: [],
   };
   bodies.add(b);
@@ -122,11 +125,11 @@ export function addBody(el: HTMLElement, mode: Mode = 'pop', opts: Partial<Pick<
   };
 
   if (mode !== 'letter') {
-    on('pointerenter', () => { b.vq += 3.4; wake(b); });
+    on('pointerenter', () => { b.vq += 2.2 * b.gain; wake(b); });
     // hanging cards only swing and pop on hover: pressing one must not deform it mid click
     if (mode !== 'hang') {
-      on('pointerdown', () => { b.vq -= 5; wake(b); });
-      on('pointerup', () => { b.vq += 4; wake(b); });
+      on('pointerdown', () => { b.vq -= 3 * b.gain; wake(b); });
+      on('pointerup', () => { b.vq += 2.4 * b.gain; wake(b); });
     }
   }
   if (mode === 'magnet' && fine()) {
@@ -156,7 +159,7 @@ export function addBody(el: HTMLElement, mode: Mode = 'pop', opts: Partial<Pick<
       removeEventListener('pointercancel', release);
       if (!b.dragging) return;
       b.dragging = false; b.tx = b.ty = 0;
-      b.vq += Math.min(7, moved * 0.03);
+      b.vq += Math.min(5, moved * 0.022) * Math.max(0.35, b.gain);
       el.classList.remove('is-held');
       wake(b);
     };
@@ -188,18 +191,18 @@ export function removeBody(b: Body) {
 export function kick(vx: number, vy: number, only?: (b: Body) => boolean) {
   bodies.forEach((b) => {
     if (!b.inview || (only && !only(b))) return;
-    b.vx += vx / b.mass; b.vy += vy / b.mass; wake(b);
+    b.vx += (vx * b.gain) / b.mass; b.vy += (vy * b.gain) / b.mass; wake(b);
   });
 }
-export function poke(b: Body, vq: number, vx = 0, vy = 0) { b.vq += vq; b.vx += vx; b.vy += vy; wake(b); }
+export function poke(b: Body, vq: number, vx = 0, vy = 0) { b.vq += vq * b.gain; b.vx += vx * b.gain; b.vy += vy * b.gain; wake(b); }
 
 export function pokeEl(el: Element | null, vq: number) { const b = el && byEl.get(el); if (b) poke(b, vq); }
 
 /** Split an element into letters and make each one a body the pointer can push. */
-export function jellyLetters(el: HTMLElement, opts: { mass?: number } = {}) {
+export function jellyLetters(el: HTMLElement, opts: { mass?: number; gain?: number } = {}) {
   const spans = chars(el);
   if (reduced()) return { spans, bodies: [] as Body[], off: () => {} };
-  const bs = spans.filter((s) => s.textContent?.trim()).map((s, i) => addBody(s, 'letter', { mass: opts.mass ?? 0.8 + ((i * 7) % 5) * 0.09, scroll: false }));
+  const bs = spans.filter((s) => s.textContent?.trim()).map((s, i) => addBody(s, 'letter', { mass: opts.mass ?? 0.8 + ((i * 7) % 5) * 0.09, scroll: false, gain: opts.gain }));
   return { spans, bodies: bs, off: () => bs.forEach(removeBody) };
 }
 
@@ -209,7 +212,10 @@ export function jellify(root: ParentNode) {
   const made: Body[] = [];
   root.querySelectorAll<HTMLElement>('[data-jelly]').forEach((el) => {
     const mode = (el.dataset.jelly || 'pop') as Mode;
-    made.push(addBody(el, mode, { mass: el.dataset.jellyMass ? parseFloat(el.dataset.jellyMass) : undefined }));
+    made.push(addBody(el, mode, {
+      mass: el.dataset.jellyMass ? parseFloat(el.dataset.jellyMass) : undefined,
+      gain: el.dataset.jellyGain ? parseFloat(el.dataset.jellyGain) : undefined,
+    }));
   });
   root.querySelectorAll<HTMLElement>('[data-magnetic]').forEach((el) => {
     made.push(addBody(el, 'magnet', { pull: parseFloat(el.dataset.magnetic || '0.3'), scroll: false }));

@@ -10,7 +10,7 @@ import type { Page } from '../main';
 
 const figure = (g: Media, cls = '') => `
   <figure class="shot ${cls}">
-    <div class="shot__body" data-jelly="drag" data-cursor="Pull me">
+    <div class="shot__body" data-jelly="drag" data-jelly-gain="0.3" data-cursor="Pull me">
       <div class="shot__clip" data-reveal="clip"><img src="${g.src}" alt="${g.alt}" loading="lazy" draggable="false" /></div>
     </div>
     <figcaption>${g.alt}</figcaption>
@@ -34,7 +34,7 @@ function gallery(items: Media[]) {
 
 const player = (f: Film, title: string) => `
   <figure class="film${f.vertical ? ' film--tall' : ''}">
-    <div class="film__body" data-jelly="drag">
+    <div class="film__body" data-jelly="drag" data-jelly-gain="0.3">
       <button class="film__frame" type="button" data-film data-cursor="Play with sound" aria-label="Play ${title}: ${f.label}, with sound">
         <video src="${f.src}" poster="${f.poster}" playsinline preload="none"></video>
         <span class="film__play" aria-hidden="true"><i></i></span>
@@ -60,7 +60,7 @@ export function project(p: Project): Page {
     html: `
     <article class="case">
       <div class="case__cover" style="--ar:${p.ar};--img:url('${p.cover}')">
-        <div class="case__stage" data-jelly="drag">
+        <div class="case__stage">
           ${p.ui
             ? `<div class="case__frame" data-flip-target>
                 <video src="${p.ui}" poster="${p.hero}" muted loop playsinline preload="auto" data-ambient aria-label="The hero section of the ${name} page, recorded"></video>
@@ -98,7 +98,7 @@ export function project(p: Project): Page {
             </ol>
             <p class="story__hint label" aria-hidden="true">Your scroll drives the recording</p>
           </div>
-          <div class="story__stage" data-jelly>
+          <div class="story__stage" data-jelly data-jelly-gain="0.25">
             <video src="${p.walk}" poster="${p.cover}" muted playsinline preload="auto" aria-label="${name}: the whole page being scrolled"></video>
             <span class="story__bar" aria-hidden="true"><i></i></span>
           </div>
@@ -113,7 +113,7 @@ export function project(p: Project): Page {
       <section class="case__dark" data-theme-zone="ink">
         <div class="gal wrap">${gallery(p.gallery)}</div>
         <dl class="facts wrap">
-          ${p.facts.map((f) => `<div class="fact" data-reveal><dt>${f.label}</dt><dd><span data-jelly="drag">${f.value}</span></dd></div>`).join('')}
+          ${p.facts.map((f) => `<div class="fact" data-reveal><dt>${f.label}</dt><dd><span data-jelly="drag" data-jelly-gain="0.35">${f.value}</span></dd></div>`).join('')}
         </dl>
       </section>
 
@@ -133,7 +133,7 @@ export function project(p: Project): Page {
         <div>
           <h2 class="label" data-scramble>Palette</h2>
           <ul class="swatches">
-            ${p.palette.map((c) => `<li data-reveal><i style="background:${c.hex}" data-jelly="drag"></i><span>${c.name}</span><code>${c.hex.toUpperCase()}</code></li>`).join('')}
+            ${p.palette.map((c) => `<li data-reveal><i style="background:${c.hex}" data-jelly="drag" data-jelly-gain="0.35"></i><span>${c.name}</span><code>${c.hex.toUpperCase()}</code></li>`).join('')}
           </ul>
         </div>
         <div>
@@ -149,7 +149,7 @@ export function project(p: Project): Page {
 
       <a class="next" href="/works/${next.slug}" data-flip data-cursor="Next project">
         <span class="label" data-scramble>Next project</span>
-        <span class="next__img" style="--ar:${next.ar}"><span data-flip-src data-jelly><img src="${next.cover}" alt="" loading="lazy" draggable="false" /></span></span>
+        <span class="next__img" style="--ar:${next.ar}"><span data-flip-src data-jelly data-jelly-gain="0.3"><img src="${next.cover}" alt="" loading="lazy" draggable="false" /></span></span>
         <span class="next__ttl"><strong>${next.title.filter(Boolean).join('<br>')}</strong><em>${next.kind}</em></span>
       </a>
     </article>`,
@@ -213,7 +213,7 @@ export function project(p: Project): Page {
             if (a !== active) {
               active = a;
               items.forEach((li, i) => li.classList.toggle('is-on', i === a));
-              pokeEl(stage, 3.2);
+              pokeEl(stage, 2);
             }
           };
           gsap.ticker.add(tick);
@@ -224,7 +224,21 @@ export function project(p: Project): Page {
       if (reduced()) return offFilms;
       const head = root.querySelector<HTMLElement>('.case__head')!;
       const lines = [...root.querySelectorAll<HTMLElement>('.case__title .mask > span')];
-      const letters = lines.map((l) => jellyLetters(l));
+      const letters = lines.map((l) => jellyLetters(l, { gain: 0.45 }));
+
+      // the banner does not wobble. As it leaves, its bottom edge bends into the same lens the
+      // page transition uses, the recording sinks back into it and the glow behind it drifts off
+      const cover = root.querySelector<HTMLElement>('.case__cover')!;
+      const stage = cover.querySelector<HTMLElement>('.case__stage')!;
+      const tag = cover.querySelector<HTMLElement>('.film__tag');
+      const out = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: cover, start: 'top top', end: 'bottom top', scrub: 0.6, invalidateOnRefresh: true },
+      });
+      out
+        .fromTo(cover, { '--curve': 0, '--drift': 0 }, { '--curve': 42, '--drift': 1 }, 0)
+        .fromTo(stage, { yPercent: 0, scale: 1, rotateX: 0 }, { yPercent: 30, scale: 0.8, rotateX: 9, ease: 'power1.in' }, 0);
+      if (tag) out.to(tag, { autoAlpha: 0, y: 12, duration: 0.3 }, 0);
 
       // poster title -> running head; the category line keeps its size while the title shrinks
       const k = () => Math.max(0.1, Math.min(0.26, (190 / head.offsetWidth) * (innerWidth < 760 ? 0.7 : 1)));
